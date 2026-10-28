@@ -1,0 +1,23 @@
+# MTUOC-eval configuration file (v5.6)
+
+Hardware:
+  device: "auto"        # "auto", "cuda", "cpu"
+  batch_size_gpu: 32    # Batch size per a GPU CUDA
+  batch_size_cpu: 8     # Batch size per a CPU
+
+SacreBLEU:
+  bleu_tokenize: "13a"        # "13a", "intl", "zh", "ja-mecab", etc.
+  bleu_smooth_method: "exp"   # "exp", "floor", "add-k", "none"
+  bleu_lowercase: False
+  chrf_char_order: 6
+  chrf_word_order: 2          # 2 per a chrF++
+  chrf_whitespace: False
+  ter_normalized: False
+  ter_no_punct: False
+  ter_case_sensitive: False
+
+Models:
+  comet_default: "Unbabel/wmt22-comet-da"
+  comet_qe_default: "Unbabel/wmt20-comet-qe-da"
+  bertscore_default: "bert-base-multilingual-cased"
+  sbert_qe_default: "sentence-transformers/LaBSE"
