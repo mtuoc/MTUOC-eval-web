@@ -1,8 +1,9 @@
 """
 MTUOC-eval Web Edition (Streamlit - Exact Qt GUI Clone)
 - Full GPU acceleration with PyTorch, CUDA cache cleanup, and RTX 5090 optimizations.
-- Radar Charts: Un gràfic de radar PER CADA MÈTRICA comparant els sistemes (spokes = sistemes).
+- Radar Charts: Un gràfic de radar PER CADA MÈTRICA comparant els sistemes (spokes = sistemes; requereix >= 3 sistemes).
   També gràfics de barres per mètrica comparant els sistemes.
+- Suport per a mètriques amb valors negatius (p. ex. COMET-QE) tant a les barres com al radar.
 - Renderització directa en Base64 Data URI per evitar errors de Starlette/Uvicorn GZipMiddleware.
 - Botó de descàrrega client-side HTML5 que no recarrega la pàgina ni canvia de pestanya.
 - Capçalera sense talls (padding-top: 4.5rem).
@@ -647,8 +648,10 @@ with main_tab_vis:
         numeric_metrics = [m for m, s_dict in corpus.items() if any(isinstance(v, (int, float)) for v in s_dict.values())]
         if not numeric_metrics:
             st.info("No numeric metrics available to plot.")
+        elif len(systems) <= 1:
+            st.info("Comparative charts require at least 2 systems to be evaluated.")
         else:
-            # Per cada mètrica oferim Bar Chart i Radar Chart comparant els sistemes
+            # Per cada mètrica oferim Bar Chart i (si len(systems) >= 3) Radar Chart comparant els sistemes
             subtab_labels = []
             for m in numeric_metrics:
                 subtab_labels.append(f"Bar: {m}")
@@ -682,7 +685,8 @@ with main_tab_vis:
                         min_y, max_y = min(y_vals), max(y_vals)
                         span = max_y - min_y if max_y != min_y else abs(max_y) * 0.2
                         margin = span * 0.2 if span != 0 else 1.0
-                        ax.set_ylim([max(0.0, min_y - margin/2), max_y + margin])
+                        lower_limit = min_y - margin / 2 if min_y < 0 else max(0.0, min_y - margin / 2)
+                        ax.set_ylim([lower_limit, max_y + margin])
 
                     fig.tight_layout()
                     clean_name = metric.replace(" ", "_").replace("%", "pct").replace("/", "_")
@@ -719,13 +723,15 @@ with main_tab_vis:
                         ax_rad.set_xticks(angles[:-1])
                         ax_rad.set_xticklabels(spoke_labels, fontsize=9.5, fontweight='bold')
 
-                        # Escala radial
+                        # Escala radial (suporta valors negatius com ara COMET-QE)
                         min_val, max_val = min(raw_vals), max(raw_vals)
                         if min_val == max_val:
-                            ax_rad.set_ylim(0, max_val * 1.2 if max_val > 0 else 1.0)
+                            bottom = min_val - abs(min_val) * 0.2 if min_val < 0 else 0.0
+                            top = max_val + abs(max_val) * 0.2 if max_val != 0 else 1.0
+                            ax_rad.set_ylim(bottom, top)
                         else:
                             diff = max_val - min_val
-                            bottom = max(0.0, min_val - diff * 0.25)
+                            bottom = min_val - diff * 0.25 if min_val < 0 else max(0.0, min_val - diff * 0.25)
                             top = max_val + diff * 0.15
                             ax_rad.set_ylim(bottom, top)
 
